@@ -1,0 +1,28 @@
+﻿* Show SQL Plan in Sessions and ExpensiveQueries
+SELECT
+     RPAD('(' || p.ID || ' ' || NVL(p.parent_id,'0') || ')',8) || '|' ||
+     RPAD(LPAD (' ', 2*p.DEPTH) || p.operation || ' ' || p.options,40,'.') ||
+     NVL2(p.object_owner||p.object_name, '(' || p.object_owner|| '.' || p.object_name || ') ', '') ||
+     'Cost:' || p.COST || ' ' || NVL2(p.bytes||p.CARDINALITY,'(' || p.bytes || ' bytes, ' || p.CARDINALITY || ' rows)','') || ' ' ||
+     NVL2(p.partition_id || p.partition_start || p.partition_stop,'PId:' || p.partition_id || ' PStart:' ||
+     p.partition_start || ' PStop:' || p.partition_stop,'') ||
+     'io cost=' || p.io_cost || ',cpu_cost=' || p.cpu_cost AS PLAN
+     FROM dba_hist_sql_plan p
+     WHERE p.sql_id='0t5fw0gtf0665'
+     AND plan_hash_value='554605205'
+     ORDER BY p.id, p.parent_id;
+
+* Top Waits 
+select * FROM (SELECT   wait_class, event, total_waits AS waits,
+         ROUND (time_waited_micro / 1000) AS total_ms,
+         ROUND (time_waited_micro * 100 / SUM (time_waited_micro) OVER (),
+                2
+               ) AS pct_time,
+         ROUND ((time_waited_micro / total_waits) / 1000, 2) AS avg_ms
+    FROM v$system_event
+   WHERE wait_class <> 'Idle'   
+ORDER BY time_waited_micro DESC)
+WHERE rownum < 11;
+
+
+* 
